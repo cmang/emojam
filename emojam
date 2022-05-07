@@ -1,46 +1,38 @@
 #!/usr/bin/env python3
 
-# Emojam - An Emoji keyboard for Linux
-# Using gtk+
+# Emojam - An Emoji keyboard for X-Windows (Linux/X11)
 # (c) 2022 Sam Foster
 
+# Requires GTK for Python 3
 # Requires Google's emoji fonts:
 # Noto Color Emoji
 # Package for Google's emoji font:
 # fonts-noto-color-emoji
 # /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf
 
-# Dumb idea: subclass Gtk.Button to make my own button type,
-# with metadata like category, tags and favorite (bool).
-# (and blackjack and hookers!)
-# That way I can use the metadata as filter, so it can
-# filter by category, or by favorite, or recently used
-
-# Another maybe less dumb idea: make method in emojis.py that takes emoji name,
-# returns dict entry. Use dict entry to store metadata.
-# eg: favorite status, category is already there
-# That way the filter can just filter by that metadata.
-
-
 import gi
-import emojis
-
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
 
+import emojam_emojis, emojam_config
+
 class EmojamWindow(Gtk.Window):
     def __init__(self):
+        # set up window
         super().__init__(title="Emojam")    # new Gtk.Window
         self.set_border_width(10)
         self.set_default_size(500, 500)
         self.set_can_focus(False)
-        # init emoji related stuff
+        # init emoji related stuff, and config
         self.set_css_style()    # for our emoji fonts
         self.init_emojis()  # load emojis
+        self.init_config()
+        self.current_menu_button = None
         # Initialize composite layout for the window
         box_layout = self.make_larger_layout()
         self.add(box_layout)
         self.show_all()
+        self.set_active_group("All")
 
     def make_larger_layout(self):
         box_layout = Gtk.VBox(spacing=10)
@@ -81,8 +73,12 @@ class EmojamWindow(Gtk.Window):
         scrolled.add(self.flowbox)
         return scrolled
 
+    def init_config(self):
+        self.config = emojam_config.EmojamConfig()
+        self.config.load_config()
+
     def init_emojis(self):
-        self.emo = emojis.Emojis("emojis.csv")
+        self.emo = emojam_emojis.Emojis("emojis.csv")
 
     def make_search_box(self):
         #entry = Gtk.Entry()
@@ -91,6 +87,29 @@ class EmojamWindow(Gtk.Window):
         entry.show()
         return entry
 
+    def make_emoji_button_context_menu(self):
+        menu = Gtk.Menu()
+        favorites_menu_item = Gtk.CheckMenuItem(label="Favorites")
+        favorites_menu_item.connect_object('toggled', self.toggled_favorites, \
+             favorites_menu_item)
+        menu.append(favorites_menu_item)
+        favorites_menu_item.show()
+        return menu, favorites_menu_item    # I promised myself I'd never love twice.
+
+    def toggled_favorites(self, menu_item):
+        is_checked = menu_item.get_active()
+        #print("Toggled_favorites triggered: ", str(is_checked))
+        #print(menu_item)
+        #button = menu_item.get_parent()
+        if self.current_menu_button:    # tricky
+            emoji_name = self.current_menu_button.get_name()
+            if is_checked:
+                #print("Adding to favorites.")
+                self.config.add_favorite(emoji_name)
+            else:   
+                self.config.remove_favorite(emoji_name)
+            self.config.save()
+
     def make_group_button(self, s_button_name):
         s_button_label = self.emo.emoji_from_group(s_button_name)
         button = Gtk.Button(label=s_button_label)
@@ -98,6 +117,13 @@ class EmojamWindow(Gtk.Window):
         button.set_name(s_button_name)
         return button
 
+    def emoji_button_mouse_event(self, widget, event, button):  # widget is the menu widget
+        #print(f"Debug: emoji_button_mouse_event, button: %i" % (event.button.button))
+        if event.type == Gdk.EventType.BUTTON_PRESS and event.button.button == 3: # right-click
+            # make menu pop up
+            self.current_menu_button = button
+            #print("Menu should pop up now.")
+            widget.popup(None, None, None, None, event.button.button, event.time)
 
     def make_groups_buttons(self):
         # returns a gtk box containing ze buttons
@@ -148,11 +174,24 @@ class EmojamWindow(Gtk.Window):
         """ Filter by group or category """
         if s_group == 'All':
             return True
-        for button in fb_child:
-            if s_group in self.emo.emoji_group_from_name(button.get_name()):
-                return True
-            else:
-                return False
+        elif s_group == "Recently Used":
+            for button in fb_child:
+                if self.config.is_in_recent_emojis(button.get_name()):
+                    return True
+                else:
+                    return False
+        elif s_group == "Favorites":
+            for button in fb_child:
+                if self.config.is_in_favorites(button.get_name()):
+                    return True
+                else:
+                    return False
+        else:
+            for button in fb_child:
+                if s_group in self.emo.emoji_group_from_name(button.get_name()):
+                    return True
+                else:
+                    return False
         return False # should never really get here
 
     def flowbox_search_filter(self, fb_child, text):
@@ -175,6 +214,7 @@ class EmojamWindow(Gtk.Window):
         return False    # should never really get here
 
     def search_box_changed(self, widget, user_data):
+        self.set_active_group("All")    # since we're searching all, make it clear..
         search_text = widget.get_text().lower()
         self.flowbox.set_filter_func(self.flowbox_search_filter, search_text)
         #print(search_text)
@@ -186,6 +226,13 @@ class EmojamWindow(Gtk.Window):
         button.set_tooltip_text(s_emoji_name)
         button.set_name(s_emoji_name)
         button.connect("clicked", self.clicked_emoji_button)
+        menu, checkbox_menu_item  = self.make_emoji_button_context_menu()
+        if self.config.is_in_favorites(s_emoji_name):
+            # Preopulate favorite checkbox
+            checkbox_menu_item.set_active(True)
+        else:
+            checkbox_menu_item.set_active(False)
+        button.connect_object("event", self.emoji_button_mouse_event, menu, button) # right click
         return button
 
     def set_css_style(self):
@@ -209,6 +256,7 @@ class EmojamWindow(Gtk.Window):
     def set_active_group(self, s_group):
         #s_group: str = widget.get_label()
         #print(f"Setting group to: {s_group}")
+        self.s_active_group = s_group
         self.flowbox.set_filter_func(self.flowbox_group_filter, s_group)
         self.selected_group_label.set_text(s_group)
 
@@ -216,6 +264,8 @@ class EmojamWindow(Gtk.Window):
         s_emoji: str = widget.get_label()
         s_emoji_name: str = widget.get_name()
         s_emoji_group: str = self.emo.emoji_group_from_name(s_emoji_name)
+        self.config.add_recent(s_emoji_name)
+        self.config.save()
         print(f"{s_emoji} :{s_emoji_name}: {s_emoji_group}")
 
     def populate_flowbox_with_emojis(self, flowbox):
