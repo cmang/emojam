@@ -1,4 +1,5 @@
-![emojam-screenshot](https://user-images.githubusercontent.com/261501/167248068-0d346c64-5123-4bcd-b62f-a4cfb62e19d7.png)
+![emojam-screenshot](https://user-images.githubusercontent.com/261501/167294557-63988b92-91b9-4c77-9f51-ab55943d7bb2.png)
+
 
 # Emojam
 Emojam is a no-frills Emoji picker/keyboard for Linux/X11.
