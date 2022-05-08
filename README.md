@@ -1,8 +1,7 @@
-![emojam-screenshot](https://user-images.githubusercontent.com/261501/167294557-63988b92-91b9-4c77-9f51-ab55943d7bb2.png)
-
-
 # Emojam
-Emojam is a no-frills Emoji picker/keyboard for Linux/X11.
+Emojam is a no-frills Emoji picker/keyboard for X-Windows (Linux/X11, Unix, etc)
+
+![emojam-screenshot](https://user-images.githubusercontent.com/261501/167294557-63988b92-91b9-4c77-9f51-ab55943d7bb2.png)
 
 # Requirements
 Most Linux systems with X-Windows will probably have these pre-installed:
@@ -12,12 +11,12 @@ Most Linux systems with X-Windows will probably have these pre-installed:
 * Noto Color Emoji Font (from Noto Fonts, Google's free international unicode fonts) - https://fonts.google.com/noto
 
 # Usage
-Right now it just prints the emoji to standard output, so run it from a terminal. In the future I plan to make it send emojis to individual X11 or Wayland windows.
+Right now it just prints the emoji to an output field, and to standard output. In the future I plan to make it send emojis to individual X11 or Wayland windows, like a real keyboard.
 
 # Why?
-When I went looking for an emoji keyboard for Linux, the ones I found all had fatal flaws. Some required a specific package manager, or a specific desktop environment. Some had hundreds of megabytes of dependencies or large bundled downloads.
+When I went looking for an emoji keyboard for Linux, the ones I found all had fatal flaws. Some required a specific package manager, or a specific desktop environment. Some only worked in certain GUI toolkit text fields. Some had hundreds of megabytes of dependencies or large bundled downloads.
 
-I thought I could make something that is relatively small, easy to use, and without a bunch of un-necessary dependencies. This should run on most Linux systems with a GUI out-of-the-box, and is just a few hundred kilobytes.
+I thought I could make something that is flexible, easy to use, and without a bunch of un-necessary dependencies. This should run out-of-the-box on most Linux systems with a GUI, in any window manager, and is just a few hundred kilobytes to download.
 
 # Legal
 This program is distributed under the GNU General Public License (GPL) version 3. See LICENSE file for details.
