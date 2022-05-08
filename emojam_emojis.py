@@ -42,13 +42,13 @@ class Emojis:
         elif s_emoji_name == "Activities":
             return self.emoji_from_name("rugby football")
         elif s_emoji_name == "Animals-Nature":
-            return self.emoji_from_name("fox")
+            return self.emoji_from_name("herb")
         elif s_emoji_name == "Component":
             return self.emoji_from_name("medium skin tone")
         elif s_emoji_name == "Flags":
             return self.emoji_from_name("chequered flag")
         elif s_emoji_name == "Food-Drink":
-            return self.emoji_from_name("cocktail glass")
+            return self.emoji_from_name("fork and knife")
         elif s_emoji_name == "Objects":
             return self.emoji_from_name("hammer")
         elif s_emoji_name == "People-Body":
