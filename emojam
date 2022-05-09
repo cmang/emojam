@@ -21,8 +21,9 @@ class EmojamWindow(Gtk.Window):
         # set up window
         super().__init__(title="Emojam")    # new Gtk.Window
         self.set_border_width(10)
-        self.set_default_size(550, 500)
+        self.set_default_size(740, 400)
         self.set_can_focus(False)
+        self.group_buttons_dict = {}
         # init emoji related stuff, and config
         self.s_active_group = ""    # to keep the toggled init from complaining on startup
         self.set_css_style()    # for our emoji fonts
@@ -45,12 +46,6 @@ class EmojamWindow(Gtk.Window):
         # make output line
         self.output_line_box = self.make_output_line()
         box_layout.pack_start(self.output_line_box, expand=False, fill=True, padding=0)
-        # make group/categories buttons label
-        #group_buttons_label = Gtk.Label(label="Categories")
-        #group_buttons_label.set_alignment(0.0, 0.0)
-        #group_buttons_label.props.xalign = 0.0
-        #group_buttons_label.show()
-        #box_layout.pack_start(group_buttons_label, expand=False, fill=False, padding=0)
         # make groups buttons area 
         groups_button_box = self.make_groups_buttons()
         # add groups buttons just below search box
@@ -134,17 +129,36 @@ class EmojamWindow(Gtk.Window):
 
     def make_group_button(self, s_button_name):
         s_button_label = self.emo.emoji_from_group(s_button_name)
-        button_label = Gtk.Label(label=s_button_label)
+        button_label = Gtk.Label(label=f" {s_button_label} ")
         #button = Gtk.Button(label=s_button_label)
         button = Gtk.EventBox()
         button.add(button_label)
         button.set_tooltip_text(s_button_name)
         button.set_name("group-button")
+        self.group_buttons_dict.update({s_button_name: button}) # map name to widget
         return button
 
+    def enter_hover_over_emoji_button(self, button):
+        s_emoji_name = button.get_name()
+        #print(f"Entering hover over {s_emoji_name}")
+        button_style_context = button.get_style_context()
+        button_style_context.add_class('highlighted')
+
+    def leave_hover_over_emoji_button(self, button):
+        s_emoji_name = button.get_name()
+        #print(f"Leaving hover over {s_emoji_name}")
+        button_style_context = button.get_style_context()
+        button_style_context.remove_class('highlighted')
+
+    # Mouse event handler - hovers, clicks, scrolls, etc
     def emoji_button_mouse_event(self, widget, event, button):  # widget is the menu widget
         #print(f"Debug: emoji_button_mouse_event, button: %i" % (event.button.button))
-        if event.type == Gdk.EventType.BUTTON_PRESS:
+        #print(f"Debug: emoji_button_mouse_event, button: {event}")
+        if event.type == Gdk.EventType.ENTER_NOTIFY:
+            self.enter_hover_over_emoji_button(button)
+        elif event.type == Gdk.EventType.LEAVE_NOTIFY:
+            self.leave_hover_over_emoji_button(button)
+        elif event.type == Gdk.EventType.BUTTON_PRESS:
             if event.button.button == 3: # right-click
                 # make menu pop up
                 self.current_menu_button = button
@@ -158,68 +172,64 @@ class EmojamWindow(Gtk.Window):
         scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         #scrolled.set_policy(Gtk.PolicyType.ALWAYS, Gtk.PolicyType.AUTOMATIC)
 
-        #groups_bbox = Gtk.HButtonBox()
         groups_bbox = Gtk.HBox()
-        #groups_bbox.set_margin_bottom(10)
-        #groups_bbox.set_margin_top(10)
-        #groups_bbox.set_layout(Gtk.ButtonBoxStyle.EDGE)
         added_groups = []
         # Make "all" (global) button - show all emojis
         button = self.make_group_button("All")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         # Make favorites button
         button = self.make_group_button("Favorites")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         # make recently used button
         button = self.make_group_button("Recently Used")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         # Put smileys-emotion button near the front of the list
         button = self.make_group_button("Smileys-Emotion")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Smileys-Emotion")
         # Add People-Body
         button = self.make_group_button("People-Body")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("People-Body")
         # Add Animals-Nature
         button = self.make_group_button("Animals-Nature")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Animals-Nature")
         # Add Food-Drink
         button = self.make_group_button("Food-Drink")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Food-Drink")
         # Add Travel-Places
         button = self.make_group_button("Travel-Places")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Travel-Places")
         # Add Activities
         button = self.make_group_button("Activities")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Activities")
         # Add Objects
         button = self.make_group_button("Objects")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Objects")
         # Add Symbols
         button = self.make_group_button("Symbols")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Symbols")
         # Add Flags
         button = self.make_group_button("Flags")
         button.connect("button-press-event", self.clicked_group_button)
-        groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
+        groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         added_groups.append("Flags")
         
         for s_group in self.emo.d_emojis.keys():
@@ -229,11 +239,7 @@ class EmojamWindow(Gtk.Window):
             if s_group not in added_groups:
                 button = self.make_group_button(s_group)
                 button.connect("button-press-event", self.clicked_group_button)
-                groups_bbox.pack_start(button, expand=False, fill=True, padding=10)
-        #return groups_bbox
-        #scrolled.set_margin_bottom(10)
-        #scrolled.set_margin_top(10)
-        #scrolled.add(groups_bbox)
+                groups_bbox.pack_start(button, expand=False, fill=True, padding=0)
         scrolled.set_propagate_natural_height(True)
         scrolled.add(groups_bbox)
         return scrolled
@@ -290,15 +296,12 @@ class EmojamWindow(Gtk.Window):
 
     def make_emoji_button(self, s_emoji_name: str):
         s_emoji = self.emo.emoji_from_name(s_emoji_name)
-        #button = Gtk.Button(label=s_emoji)
         button = Gtk.EventBox()
         button_label = Gtk.Label(label=s_emoji)
         button_label.set_name("emoji-button")
         button.add(button_label)
         button.set_tooltip_text(f":{s_emoji_name}:")
         button.set_name(s_emoji_name)
-        #button.connect("clicked", self.clicked_emoji_button)
-        #button.connect("button-press-event", self.clicked_emoji_button)
         menu, checkbox_menu_item  = self.make_emoji_button_context_menu()
         if self.config.is_in_favorites(s_emoji_name):
             # Preopulate favorite checkbox
@@ -310,6 +313,13 @@ class EmojamWindow(Gtk.Window):
 
     def set_css_style(self):
         #css = 'button { background-color: #f00; }'
+        # Get "selected" color from theme, to use as our highlight color
+        tv = Gtk.TextView()  # dumb smart way to get theme's selected background color
+        selected_bg_color = tv.get_style_context().lookup_color('theme_selected_bg_color')
+        selected_bg_color.color.alpha = 0.4
+        #print(selected_bg_color)
+        s_hilight_color = selected_bg_color.color.to_string()
+        # static css - should probably put this in a file...
         css = '                                    \
             #emoji-button {                               \
                 font-family: Noto Color Emoji;     \
@@ -322,8 +332,20 @@ class EmojamWindow(Gtk.Window):
                 font-family: Noto Color Emoji;     \
                 font-size: 90%;                   \
             }                                      \
-                                                   \
             '
+        # dynamically generated to match theme highlight color
+        css += "                    \
+            .highlighted {                    \
+                border-radius: 10px;            \
+                background-color: %s;          \
+            }                                      \
+            .selected-group {                       \
+                border-radius: 5px;         \
+                background-color: %s;          \
+            }                                       \
+                                                   \
+            " % (s_hilight_color, s_hilight_color)
+
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(css.encode())
         context = Gtk.StyleContext()
@@ -338,11 +360,23 @@ class EmojamWindow(Gtk.Window):
         self.search_entry.set_text("")
 
     def set_active_group(self, s_group):
+        # un-highlight new button
+        try:
+            button = self.group_buttons_dict[self.s_active_group]
+            button_style_context = button.get_style_context()
+            button_style_context.remove_class('selected-group')
+        except KeyError:    # only happens on startup
+            pass
         #s_group: str = widget.get_label()
         #print(f"Setting group to: {s_group}")
+        # change group in data structures
         self.s_active_group = s_group
         self.flowbox.set_filter_func(self.flowbox_group_filter, s_group)
         self.selected_group_label.set_text(s_group)
+        # highlight new button
+        button = self.group_buttons_dict[s_group]
+        button_style_context = button.get_style_context()
+        button_style_context.add_class('selected-group')
 
     def add_to_output_line(self, s_emoji):
         self.s_output_line = self.output_text_field.get_text()
@@ -363,16 +397,10 @@ class EmojamWindow(Gtk.Window):
         self.add_to_output_line(s_emoji)
 
     def populate_flowbox_with_emojis(self, flowbox):
-        #for s_emoji_name in self.emo.d_emojis['Smileys-Emotion']:
-        #    button = self.make_emoji_button(s_emoji_name)
-        #    flowbox.add(button)
         # load all emojis:
         for s_group in self.emo.d_emojis.keys():
             label = Gtk.Label(label=s_group)
-            #label.set_single_line_mode(True)
-            #label.set_halign(Gtk.Align.END)
             label.show()
-            #flowbox.add(label)
             for s_emoji_name in self.emo.d_emojis[s_group]:
                 button = self.make_emoji_button(s_emoji_name)
                 flowbox.add(button)
