@@ -46,11 +46,11 @@ class Emojis:
         elif s_emoji_name == "Component":
             return self.emoji_from_name("medium skin tone")
         elif s_emoji_name == "Flags":
-            return self.emoji_from_name("chequered flag")
+            return self.emoji_from_name("white flag")
         elif s_emoji_name == "Food-Drink":
             return self.emoji_from_name("fork and knife")
         elif s_emoji_name == "Objects":
-            return self.emoji_from_name("hammer")
+            return self.emoji_from_name("light bulb")
         elif s_emoji_name == "People-Body":
             return self.emoji_from_name("person shrugging")
         elif s_emoji_name == "Symbols":

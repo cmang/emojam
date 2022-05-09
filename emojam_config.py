@@ -4,6 +4,10 @@
 # Save and load config files
 # Store favorites and recent lists, so they will preserve when we restart the program
 # Some program state lives here and gets saved automatically to emojam.ini
+#
+# Part of Emojam, (c) 2022 Sam Foster
+# See LICENSE file for details
+
 
 import configparser
 import os.path
