@@ -36,6 +36,7 @@ class EmojamWindow(Gtk.Window):
         self.add(box_layout)
         self.show_all()
         self.set_active_group("All")
+        Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.gtk_theme_changed)
 
     def make_larger_layout(self):
         box_layout = Gtk.VBox(spacing=10)
@@ -311,12 +312,15 @@ class EmojamWindow(Gtk.Window):
         button.connect_object("event", self.emoji_button_mouse_event, menu, button) # right click
         return button
 
+    def gtk_theme_changed(self, settings, gparam):
+        self.set_css_style()
+
     def set_css_style(self):
         #css = 'button { background-color: #f00; }'
         # Get "selected" color from theme, to use as our highlight color
         tv = Gtk.TextView()  # dumb smart way to get theme's selected background color
         selected_bg_color = tv.get_style_context().lookup_color('theme_selected_bg_color')
-        selected_bg_color.color.alpha = 0.4
+        selected_bg_color.color.alpha = 0.5
         #print(selected_bg_color)
         s_hilight_color = selected_bg_color.color.to_string()
         # static css - should probably put this in a file...

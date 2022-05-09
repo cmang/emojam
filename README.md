@@ -1,5 +1,5 @@
 # Emojam
-Emojam is a no-frills Emoji picker/keyboard for X-Windows (Linux/X11, Unix, etc)
+Emojam is a no-frills Emoji picker/keyboard for X-Windows (Linux, Unix, X11, etc)
 
 ![emojam-0 4-screenshot](https://user-images.githubusercontent.com/261501/167421406-93f0041a-b62a-4752-b472-85ab3cda2f90.png)
 
@@ -9,6 +9,7 @@ Most Linux systems with X-Windows will probably have these pre-installed:
 * Python 3
 * PyGTK 3
 * Noto Color Emoji Font (from Noto Fonts, Google's free international unicode fonts) - https://fonts.google.com/noto
+* A Linux or Unix-like system
 
 # Usage
 Right now it just prints the emoji to an output field, and to standard output. In the future I plan to make it send emojis to individual X11 or Wayland windows, like a real keyboard.
