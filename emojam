@@ -60,7 +60,24 @@ class EmojamWindow(Gtk.Window):
         # make the emoji flowbox area
         scrolled_flowbox = self.make_a_scrolled_flowbox_layout()
         # add flowbox to the bottom of the VBox
-        box_layout.pack_end(scrolled_flowbox, expand=True, fill=True, padding=0)
+        box_layout.pack_start(scrolled_flowbox, expand=True, fill=True, padding=0)
+        # make a status bar - ugh, it's so big and ugly. why?
+        self.status_bar = Gtk.Statusbar()
+        context_id = self.status_bar.get_context_id("Statusbar")
+        # Bottom of the statusbar stack message:
+        i_emoji_count = self.emo.emoji_count()
+        statusbar_message = f"{i_emoji_count} emojis loaded"
+        self.status_bar.push(context_id, statusbar_message)
+        # Try to make this ugly thing smaller:
+        self.status_bar.set_margin_top(0)
+        self.status_bar.set_margin_bottom(0)
+        message_area = self.status_bar.get_message_area()   # a box
+        message_area.set_margin_top(0)
+        message_area.set_margin_bottom(0)
+        #statusbar_label = message_area.get_children()
+        #print(statusbar_label)
+        #message_area.set_child_packing(statusbar_label[0], False, False, 0, Gtk.PackType.START)
+        box_layout.pack_end(self.status_bar, expand=False, fill=False, padding=0)
         return box_layout
 
     def make_a_scrolled_flowbox_layout(self):
@@ -135,23 +152,70 @@ class EmojamWindow(Gtk.Window):
         button = Gtk.EventBox()
         button.add(button_label)
         button.set_tooltip_text(s_button_name)
-        button.set_name("group-button")
+        button.set_name(s_button_name)
+        # add it to .group-button CSS class
+        button_style_context = button.get_style_context()
+        button_style_context.add_class("group-button")
+        button.connect_object("event", self.group_button_mouse_event, button) # right click and hover
         self.group_buttons_dict.update({s_button_name: button}) # map name to widget
         return button
 
+    def enter_hover_over_group_button(self, button):
+        s_group_name = button.get_name()
+        #print(f"Entering hover over {s_emoji_name}")
+        if self.s_active_group != s_group_name:
+            button_style_context = button.get_style_context()
+            button_style_context.add_class('hovered-group')
+        # update status bar
+        s_status_bar_text = f"Category: {s_group_name}"
+        context_id = self.status_bar.get_context_id("hovered-group-name")
+        self.status_bar.push(context_id, s_status_bar_text)
+
+    def leave_hover_over_group_button(self, button):
+        #s_emoji_name = button.get_name()
+        #print(f"Leaving hover over {s_emoji_name}")
+        button_style_context = button.get_style_context()
+        button_style_context.remove_class('hovered-group')
+        # update status bar
+        context_id = self.status_bar.get_context_id("hovered-group-name")
+        self.status_bar.pop(context_id)
+
     def enter_hover_over_emoji_button(self, button):
         s_emoji_name = button.get_name()
+        s_emoji = self.emo.emoji_from_name(s_emoji_name)
+        # update statusbar:
+        d_emoji = self.emo.emoji_dict_from_name(s_emoji_name)
+        hex_code = d_emoji['codepoint']
+        group = d_emoji['group']
+        sub_group = d_emoji['sub_group']
+        if self.config.is_in_favorites(button.get_name()):
+            fav = "yes"
+        else:
+            fav = "no"
+        s_status_bar_text = f"{s_emoji} {s_emoji_name}, Favorite: {fav}, Hex: {hex_code}, Group: {group}, Sub-group: {sub_group}" 
+        context_id = self.status_bar.get_context_id("emoji-info")
+        self.status_bar.push(context_id, s_status_bar_text)
         #print(f"Entering hover over {s_emoji_name}")
         button_style_context = button.get_style_context()
         button_style_context.add_class('highlighted')
 
     def leave_hover_over_emoji_button(self, button):
         s_emoji_name = button.get_name()
+        context_id = self.status_bar.get_context_id("emoji-info")
+        self.status_bar.pop(context_id)
         #print(f"Leaving hover over {s_emoji_name}")
         button_style_context = button.get_style_context()
         button_style_context.remove_class('highlighted')
 
-    # Mouse event handler - hovers, clicks, scrolls, etc
+    def group_button_mouse_event(self, button, event):
+        #print(f"Debug: emoji_button_mouse_event, button: %i" % (event.button.button))
+        #print(f"Debug: emoji_button_mouse_event, button: {event}")
+        if event.type == Gdk.EventType.ENTER_NOTIFY:
+            self.enter_hover_over_group_button(button)
+        elif event.type == Gdk.EventType.LEAVE_NOTIFY:
+            self.leave_hover_over_group_button(button)
+
+    # Mouse event handlers - hovers, clicks, scrolls, etc
     def emoji_button_mouse_event(self, widget, event, button):  # widget is the menu widget
         #print(f"Debug: emoji_button_mouse_event, button: %i" % (event.button.button))
         #print(f"Debug: emoji_button_mouse_event, button: {event}")
@@ -299,17 +363,20 @@ class EmojamWindow(Gtk.Window):
         s_emoji = self.emo.emoji_from_name(s_emoji_name)
         button = Gtk.EventBox()
         button_label = Gtk.Label(label=s_emoji)
-        button_label.set_name("emoji-button")
-        button.add(button_label)
-        button.set_tooltip_text(f":{s_emoji_name}:")
         button.set_name(s_emoji_name)
+        button_label.set_name(s_emoji)
+        button.add(button_label)
+        #button.set_tooltip_text(f":{s_emoji_name}:")
+        # add button to .emoji-button CSS class
+        button_style_context = button.get_style_context()
+        button_style_context.add_class("emoji-button")
         menu, checkbox_menu_item  = self.make_emoji_button_context_menu()
         if self.config.is_in_favorites(s_emoji_name):
             # Preopulate favorite checkbox
             checkbox_menu_item.set_active(True)
         else:
             checkbox_menu_item.set_active(False)
-        button.connect_object("event", self.emoji_button_mouse_event, menu, button) # right click
+        button.connect_object("event", self.emoji_button_mouse_event, menu, button) # right click and hover
         return button
 
     def gtk_theme_changed(self, settings, gparam):
@@ -320,19 +387,18 @@ class EmojamWindow(Gtk.Window):
         # Get "selected" color from theme, to use as our highlight color
         tv = Gtk.TextView()  # dumb smart way to get theme's selected background color
         selected_bg_color = tv.get_style_context().lookup_color('theme_selected_bg_color')
-        selected_bg_color.color.alpha = 0.5
+        selected_bg_color.color.alpha = 0.7
         #print(selected_bg_color)
         s_hilight_color = selected_bg_color.color.to_string()
+        selected_bg_color.color.alpha = 0.4
+        s_hilight_color_fainter = selected_bg_color.color.to_string()
         # static css - should probably put this in a file...
         css = '                                    \
-            #emoji-button {                               \
+            .emoji-button {                               \
                 font-family: Noto Color Emoji;     \
-                font-size: 250%;                   \
-            }                                      \
-            #emoji-button {                        \
                 font-size: 275%;                   \
             }                                      \
-            #group-button {                        \
+            .group-button {                        \
                 font-family: Noto Color Emoji;     \
                 font-size: 90%;                   \
             }                                      \
@@ -342,13 +408,20 @@ class EmojamWindow(Gtk.Window):
             .highlighted {                    \
                 border-radius: 10px;            \
                 background-color: %s;          \
+                text-shadow: 1px 1px 3px black;       \
             }                                      \
             .selected-group {                       \
                 border-radius: 5px;         \
                 background-color: %s;          \
+                text-shadow: 1px 1px 2px black;       \
+            }                                       \
+            .hovered-group {                       \
+                border-radius: 5px;         \
+                background-color: %s;          \
+                text-shadow: 1px 1px 2px black;       \
             }                                       \
                                                    \
-            " % (s_hilight_color, s_hilight_color)
+            " % (s_hilight_color, s_hilight_color, s_hilight_color_fainter)
 
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(css.encode())
@@ -358,8 +431,8 @@ class EmojamWindow(Gtk.Window):
                                     Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def clicked_group_button(self, widget, event):
-        #s_group: str = widget.get_name()
-        s_group: str = widget.get_tooltip_text()
+        s_group: str = widget.get_name()
+        #s_group: str = widget.get_tooltip_text()
         self.set_active_group(s_group)
         self.search_entry.set_text("")
 
@@ -416,6 +489,11 @@ def main():
     Gtk.main()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nCaught interrupt, exiting...")
+        exit(0)
+
 
 

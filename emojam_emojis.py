@@ -9,10 +9,12 @@ import csv
 class Emojis:
     """ Load, contain and manage an emoji database """
     def __init__(self, s_db_filename: str):
+        self.s_db_filename = s_db_filename
         self.load_emojis_from_csv_file(s_db_filename)
  
     def load_emojis_from_csv_file(self, s_db_filename: str):
         self.d_emojis = {} # our DB of emojis.
+        self.i_emoji_count = 0 
         # { group {name: represenation}}
         with open(s_db_filename, mode='r') as f_db_csv:
             self.csv_reader = csv.DictReader(f_db_csv)
@@ -23,10 +25,14 @@ class Emojis:
                     self.d_emojis[row['Group']] = {}
                 # Make metadata dict for emoji
                 d_emoji_metadata = {"name": row['Name'], "emoji": row['Representation'], \
-                    "group": row['Group'], "favorite": False}
+                    "group": row['Group'], "sub_group": row['Subgroup'], "codepoint": row['CodePoint'], "favorite": False}
                 # Add the emoji to its given group
                 #self.d_emojis[row['Group']].update({row['Name']: row['Representation']})
                 self.d_emojis[row['Group']].update({row['Name']: d_emoji_metadata})
+                self.i_emoji_count += 1
+
+    def emoji_count(self):
+        return self.i_emoji_count
 
     def emoji_from_name(self, s_emoji_name: str):
         """ Takes in an emoji name, returno the emoji """
