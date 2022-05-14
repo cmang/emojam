@@ -441,8 +441,8 @@ class EmojamWindow(Gtk.Window):
         for button in fb_child:
             if text in button.get_name().lower():
                 return True
-            elif self.emo.name_from_emoji(text) in button.get_name().lower():
-                return True
+            #elif self.emo.name_from_emoji(text) in button.get_name().lower():
+            #    return True
             elif text in self.emo.emoji_group_from_name(button.get_name()).lower():
                 return True
             else:
