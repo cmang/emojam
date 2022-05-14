@@ -20,6 +20,7 @@ class EmojamConfig:
         self.favorites = []
         self.recently_used_emojis = []
         self.recently_used_max_count = 100
+        self.show_statusbar = False
         self.config = configparser.ConfigParser()
 
     def add_favorite(self, s_emoji_name: str):
@@ -36,6 +37,15 @@ class EmojamConfig:
             # if this puts it over the max count setting, truncate it
             if len(self.recently_used_emojis) > self.recently_used_max_count:
                 self.recently_used_emojis.pop() # remove oldest/last item
+
+    def enable_statusbar(self):
+        self.show_statusbar = True
+
+    def disable_statusbar(self):
+        self.show_statusbar = False
+
+    def statusbar_is_enabled(self):
+        return self.show_statusbar
 
     def is_in_recent_emojis(self, s_emoji_name: str):
         """ Returns True if emoji is in the recent list """
@@ -57,6 +67,10 @@ class EmojamConfig:
             self.favorites = s_favorites_serialized.split(',')
             s_recently_used_serialized = self.config['Emojam']['recently_used']
             self.recently_used_emojis = s_recently_used_serialized.split(',')
+            if self.config['Emojam']['show_statusbar'] == 'True':
+                self.show_statusbar = True
+            else:
+                self.show_statusbar = False
 
     def save(self):
         self.config['Emojam'] = {}
@@ -65,6 +79,7 @@ class EmojamConfig:
         self.config['Emojam']['recently_used_max'] = str(self.recently_used_max_count)
         s_recently_used_serialized = ','.join(self.recently_used_emojis)
         self.config['Emojam']['recently_used'] = s_recently_used_serialized
+        self.config['Emojam']['show_statusbar'] = str(self.show_statusbar)
         with open(self.s_config_file_name, 'w') as config_file_handle:
             self.config.write(config_file_handle)
 

@@ -1,7 +1,7 @@
 # Emojam
 Emojam is a no-frills Emoji picker/keyboard for X-Windows on Unix-like systems.
 
-![emojam-0 6-screenshot](https://user-images.githubusercontent.com/261501/167615030-78ec0211-0762-4aec-99e1-a04f1c1f24aa.png)
+![emojam-0 7-screenshot](https://user-images.githubusercontent.com/261501/168411763-79b0f9a8-64db-4bc6-a10f-24dd5fdea494.png)
 
 # Requirements
 Most Linux systems with X-Windows will probably have these pre-installed:
