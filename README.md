@@ -12,7 +12,9 @@ Most Linux systems with X-Windows will probably have these pre-installed:
 * A Linux or Unix-like system
 
 # Usage
-Right now it just prints the emoji to an output field, and to standard output. In the future I plan to make it send emojis to individual X11 or Wayland windows, like a real keyboard.
+The easiest way to get an emoji from one program to another is to drag and drop it. You can also right-click the emoji and click "Copy" to copy it to the clipboard. You can also click on it to have it print to standard output, or to add to the "Output:" field, where it can be copied to the clipboard or strung together with other emojis.
+
+In the future I would like to make it send emojis to individual X11 or Wayland windows as key events, like a real keyboard, without the need for drag and drop.
 
 # Why?
 When I went looking for an emoji keyboard for Linux, the ones I found all had fatal flaws. Some required a specific package manager, or a specific desktop environment. Some only worked in certain GUI toolkit text fields. Some had hundreds of megabytes of dependencies or large bundled downloads.

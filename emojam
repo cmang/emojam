@@ -23,7 +23,13 @@ class EmojamWindow(Gtk.Window):
         self.set_border_width(10)
         self.set_default_size(740, 400)
         self.set_can_focus(False)
+        self.status_bar = None
         self.group_buttons_dict = {}
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        self.clipboard_primary = Gtk.Clipboard.get(Gdk.SELECTION_PRIMARY)
+        # make group for keyboard shortcuts
+        self.accel_group = Gtk.AccelGroup()
+        self.add_accel_group(self.accel_group)
         # init emoji related stuff, and config
         self.s_active_group = ""    # to keep the toggled init from complaining on startup
         self.set_css_style()    # for our emoji fonts
@@ -36,14 +42,23 @@ class EmojamWindow(Gtk.Window):
         self.add(box_layout)
         self.show_all()
         self.set_active_group("All")
+        self.refresh_statusbar()    # in case the config file overrides the default
+        #self.toggled_statusbar(self.statusbar_checkbox_menu_item)
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.gtk_theme_changed)
 
     def make_larger_layout(self):
         box_layout = Gtk.VBox(spacing=10)
         # make the search entry
         search_box = self.make_search_box()
+        # make hamburger menu
+        hamburger_menu = self.make_hamburger_menu()
+        # make box for search_box and hamburger menu
+        search_line_box = Gtk.HBox(spacing=10)
+        # pack em in proper order
+        search_line_box.pack_start(hamburger_menu, expand=False, fill=True, padding=0)
+        search_line_box.pack_start(search_box, expand=True, fill=True, padding=0)
         # add search box to the top of the VBox
-        box_layout.pack_start(search_box, expand=False, fill=True, padding=0)
+        box_layout.pack_start(search_line_box, expand=False, fill=True, padding=0)
         # make output line
         self.output_line_box = self.make_output_line()
         box_layout.pack_start(self.output_line_box, expand=False, fill=True, padding=0)
@@ -93,6 +108,80 @@ class EmojamWindow(Gtk.Window):
         scrolled.add(self.flowbox)
         return scrolled
 
+    def make_hamburger_menu(self):
+        # Make button
+        #menu_button = Gtk.MenuButton(popover=self.popover)
+        menu_button = Gtk.MenuButton()
+        menu_icon = Gtk.Image.new_from_icon_name("open-menu-symbolic", Gtk.IconSize.MENU)
+        menu_icon.show()
+        menu_button.add(menu_icon)
+        menu_button.set_direction(Gtk.ArrowType.DOWN)
+        menu_button.show()
+        # give it a keyboard shortcut
+        key, mod = Gtk.accelerator_parse("<Alt>f")
+        menu_button.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        # Make menu
+        menu = Gtk.Menu()
+        # make "Go to favorites" menu item
+        favorites_menu_item = Gtk.MenuItem(label="Go to _Favorites")
+        favorites_menu_item.set_use_underline(True)
+        favorites_menu_item.connect("activate", self.jump_to_favorites)
+        #favorites_menu_item.connect_data("activate", self.jump_to_favorites, "Favorites")
+        favorites_menu_item.show()
+        # give it a keyboard shortcut
+        key, mod = Gtk.accelerator_parse("<Control>f")
+        favorites_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        menu.append(favorites_menu_item)
+        # make statusbar checkbox toggle menu item
+        self.statusbar_checkbox_menu_item = Gtk.CheckMenuItem(label="Show _Status Bar")
+        self.statusbar_checkbox_menu_item.set_use_underline(True)
+        self.statusbar_checkbox_menu_item.connect_object('toggled', self.toggled_statusbar, \
+             self.statusbar_checkbox_menu_item)
+        self.statusbar_checkbox_menu_item.show()    
+        #self.statusbar_checkbox_menu_item = statusbar_checkbox_menu_item
+        menu.append(self.statusbar_checkbox_menu_item)
+        # give it a keyboard shortcut
+        key, mod = Gtk.accelerator_parse("<Control>s")
+        self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        #self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, Gdk.keyval_from_name("h"), Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
+        menu.append(Gtk.SeparatorMenuItem())
+        # make exit menu item
+        exit_menu_item = Gtk.MenuItem(label="E_xit")
+        exit_menu_item.set_use_underline(True)
+        exit_menu_item.connect("activate", Gtk.main_quit)
+        exit_menu_item.show()
+        menu.append(exit_menu_item)
+        # give it a keyboard shortcut
+        key, mod = Gtk.accelerator_parse("<Control>q")
+        exit_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        #menu.set_position(Gtk.PositionType.BOTTOM)
+        # prepoulate check based on config
+        if self.config.statusbar_is_enabled():
+            self.statusbar_checkbox_menu_item.set_active(True)
+        else:
+            self.statusbar_checkbox_menu_item.set_active(False)
+        # add to menu button
+        menu_button.set_popup(menu)
+        return menu_button
+
+    def toggled_statusbar(self, statusbar_checkbox_menu_item):
+        is_checked = statusbar_checkbox_menu_item.get_active()
+        #if self.current_menu_button:    # tricky
+        #emoji_name = self.current_menu_button.get_name()
+        if is_checked:
+            self.config.enable_statusbar()
+        else:   
+            self.config.disable_statusbar()
+        if self.status_bar:  # tricky again
+            self.refresh_statusbar()
+        self.config.save()
+
+    def refresh_statusbar(self):
+        if self.config.statusbar_is_enabled():
+            self.status_bar.show()
+        else:
+            self.status_bar.hide()
+
     def init_config(self):
         self.config = emojam_config.EmojamConfig()
         self.config.load_config()
@@ -115,7 +204,6 @@ class EmojamWindow(Gtk.Window):
 
 
     def make_search_box(self):
-        #entry = Gtk.Entry()
         self.search_entry = Gtk.SearchEntry()
         self.search_entry.connect("changed", self.search_box_changed, self.search_entry)
         self.search_entry.show()
@@ -127,16 +215,28 @@ class EmojamWindow(Gtk.Window):
         favorites_menu_item.connect_object('toggled', self.toggled_favorites, \
              favorites_menu_item)
         menu.append(favorites_menu_item)
+        copy_menu_item = Gtk.MenuItem(label="_Copy")
+        copy_menu_item.set_use_underline(True)
+        copy_menu_item.connect("activate", self.copy_emoji_to_clip)
+        copy_menu_item.show()
+        menu.append(copy_menu_item)
+
         favorites_menu_item.show()
         return menu, favorites_menu_item    # I promised myself I'd never love twice.
 
+    def copy_emoji_to_clip(self, widget):
+        print(widget)
+        if self.current_menu_button:    # tricky
+            s_name = self.current_menu_button.get_name()
+            s_emoji = self.emo.emoji_from_name(s_name)
+            self.clipboard.set_text(s_emoji, -1)
+            self.clipboard_primary.set_text(s_emoji, -1)
+
     def toggled_favorites(self, menu_item):
         is_checked = menu_item.get_active()
-        #print("Toggled_favorites triggered: ", str(is_checked))
         if self.current_menu_button:    # tricky
             emoji_name = self.current_menu_button.get_name()
             if is_checked:
-                #print("Adding to favorites.")
                 self.config.add_favorite(emoji_name)
             else:   
                 self.config.remove_favorite(emoji_name)
@@ -150,6 +250,7 @@ class EmojamWindow(Gtk.Window):
         button_label = Gtk.Label(label=f" {s_button_label} ")
         #button = Gtk.Button(label=s_button_label)
         button = Gtk.EventBox()
+        #button.set_flags(Gtk.CAN_FOCUS)
         button.add(button_label)
         button.set_tooltip_text(s_button_name)
         button.set_name(s_button_name)
@@ -337,26 +438,21 @@ class EmojamWindow(Gtk.Window):
         # from example at:
         # https://stackoverflow.com/questions/55828169/how-to-filter-gtk-flowbox-children-with-gtk-entrysearch
         if text=='': return True # empty search
-        #if text in [label.get_name() for label in fb_child]:
         for button in fb_child:
             if text in button.get_name().lower():
-                #print(button.get_name())
+                return True
+            elif self.emo.name_from_emoji(text) in button.get_name().lower():
                 return True
             elif text in self.emo.emoji_group_from_name(button.get_name()).lower():
                 return True
             else:
                 return False
-        #if text in [button.get_name() for button in fb_child]:
-        #    return True
-        #else:
-        #    return False
         return False    # should never really get here
 
     def search_box_changed(self, widget, user_data):
         self.set_active_group("All")    # since we're searching all, make it clear..
         search_text = widget.get_text().lower()
         self.flowbox.set_filter_func(self.flowbox_search_filter, search_text)
-        #print(search_text)
         pass
 
     def make_emoji_button(self, s_emoji_name: str):
@@ -366,7 +462,6 @@ class EmojamWindow(Gtk.Window):
         button.set_name(s_emoji_name)
         button_label.set_name(s_emoji)
         button.add(button_label)
-        #button.set_tooltip_text(f":{s_emoji_name}:")
         # add button to .emoji-button CSS class
         button_style_context = button.get_style_context()
         button_style_context.add_class("emoji-button")
@@ -377,7 +472,19 @@ class EmojamWindow(Gtk.Window):
         else:
             checkbox_menu_item.set_active(False)
         button.connect_object("event", self.emoji_button_mouse_event, menu, button) # right click and hover
+        # enable drag and drop
+        button.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, [], Gdk.DragAction.COPY)
+        button.drag_source_add_text_targets()
+        button.connect("drag-data-get", self.emoji_drag_data_get)
         return button
+
+    def emoji_drag_data_get(self, widget, drag_context, data, info, time):
+        """ Get data to drop when emoji is drag and dropped """
+        TARGET_TEXT_ENTRY = 0
+        if info == TARGET_TEXT_ENTRY:
+            text = self.emo.emoji_from_name(widget.get_name())
+            print(text)
+            data.set_text(text, -1)
 
     def gtk_theme_changed(self, settings, gparam):
         self.set_css_style()
@@ -388,7 +495,6 @@ class EmojamWindow(Gtk.Window):
         tv = Gtk.TextView()  # dumb smart way to get theme's selected background color
         selected_bg_color = tv.get_style_context().lookup_color('theme_selected_bg_color')
         selected_bg_color.color.alpha = 0.7
-        #print(selected_bg_color)
         s_hilight_color = selected_bg_color.color.to_string()
         selected_bg_color.color.alpha = 0.4
         s_hilight_color_fainter = selected_bg_color.color.to_string()
@@ -444,8 +550,6 @@ class EmojamWindow(Gtk.Window):
             button_style_context.remove_class('selected-group')
         except KeyError:    # only happens on startup
             pass
-        #s_group: str = widget.get_label()
-        #print(f"Setting group to: {s_group}")
         # change group in data structures
         self.s_active_group = s_group
         self.flowbox.set_filter_func(self.flowbox_group_filter, s_group)
@@ -454,6 +558,9 @@ class EmojamWindow(Gtk.Window):
         button = self.group_buttons_dict[s_group]
         button_style_context = button.get_style_context()
         button_style_context.add_class('selected-group')
+
+    def jump_to_favorites(self, widget):    # MenuItem widget
+        self.set_active_group("Favorites")
 
     def add_to_output_line(self, s_emoji):
         self.s_output_line = self.output_text_field.get_text()
@@ -485,7 +592,6 @@ class EmojamWindow(Gtk.Window):
 def main():
     win = EmojamWindow()
     win.connect("destroy", Gtk.main_quit)
-    win.show_all()
     Gtk.main()
 
 if __name__ == "__main__":

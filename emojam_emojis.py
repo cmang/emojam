@@ -41,6 +41,13 @@ class Emojis:
                 #return(self.d_emojis[group][s_emoji_name])
                 return(self.d_emojis[group][s_emoji_name]['emoji'])
 
+    def name_from_emoji(self, s_emoji: str):
+        """ Take an emoji, return emoji name """
+        for group in self.d_emojis:
+            for name in self.d_emojis[group]:
+                if self.d_emojis[group][name]['emoji'] == s_emoji:
+                    return name
+
     def emoji_from_group(self, s_emoji_name: str):
         """ Takes in a group name, returns an emoji to represent that group """
         if s_emoji_name == "Smileys-Emotion":
