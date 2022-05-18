@@ -20,6 +20,7 @@ class EmojamConfig:
         self.favorites = []
         self.recently_used_emojis = []
         self.recently_used_max_count = 100
+        self.picker_font_size = 275
         self.show_statusbar = False
         self.config = configparser.ConfigParser()
 
@@ -47,6 +48,9 @@ class EmojamConfig:
     def statusbar_is_enabled(self):
         return self.show_statusbar
 
+    def set_picket_font_size(self, new_size):
+        self.picker_font_size = new_size
+
     def is_in_recent_emojis(self, s_emoji_name: str):
         """ Returns True if emoji is in the recent list """
         if s_emoji_name in self.recently_used_emojis:
@@ -67,6 +71,8 @@ class EmojamConfig:
             self.favorites = s_favorites_serialized.split(',')
             s_recently_used_serialized = self.config['Emojam']['recently_used']
             self.recently_used_emojis = s_recently_used_serialized.split(',')
+            if 'picker_font_size' in self.config['Emojam']:
+                self.picker_font_size = int(self.config['Emojam']['picker_font_size'])
             if self.config['Emojam']['show_statusbar'] == 'True':
                 self.show_statusbar = True
             else:
@@ -77,6 +83,7 @@ class EmojamConfig:
         s_favorites_serialized = ','.join(self.favorites)
         self.config['Emojam']['favorites'] = s_favorites_serialized
         self.config['Emojam']['recently_used_max'] = str(self.recently_used_max_count)
+        self.config['Emojam']['picker_font_size'] = str(self.picker_font_size)
         s_recently_used_serialized = ','.join(self.recently_used_emojis)
         self.config['Emojam']['recently_used'] = s_recently_used_serialized
         self.config['Emojam']['show_statusbar'] = str(self.show_statusbar)

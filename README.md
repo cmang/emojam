@@ -12,7 +12,7 @@ Most Linux systems with X-Windows will probably have these pre-installed:
 * A Linux or Unix-like system
 
 # Usage
-The easiest way to get an emoji from one program to another is to drag and drop it. You can also right-click the emoji and click "Copy" to copy it to the clipboard. You can also click on it to have it print to standard output, or to add to the "Output:" field, where it can be copied to the clipboard or strung together with other emojis.
+The easiest way to get an emoji from Emojam into another window is to drag and drop it. You can also right-click the emoji and click "Copy" to copy it to the clipboard. You can also click on it to have it print to standard output, or to add to the "Output:" field, where it can be copied to the clipboard or strung together with other emojis.
 
 In the future I would like to make it send emojis to individual X11 or Wayland windows as key events, like a real keyboard, without the need for drag and drop.
 

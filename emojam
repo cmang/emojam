@@ -117,6 +117,7 @@ class EmojamWindow(Gtk.Window):
         menu_button.add(menu_icon)
         menu_button.set_direction(Gtk.ArrowType.DOWN)
         menu_button.show()
+
         # give it a keyboard shortcut
         key, mod = Gtk.accelerator_parse("<Alt>f")
         menu_button.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
@@ -132,6 +133,10 @@ class EmojamWindow(Gtk.Window):
         key, mod = Gtk.accelerator_parse("<Control>f")
         favorites_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
         menu.append(favorites_menu_item)
+
+        menu_separator = Gtk.SeparatorMenuItem()
+        menu_separator.show()
+        menu.append(menu_separator)
         # make statusbar checkbox toggle menu item
         self.statusbar_checkbox_menu_item = Gtk.CheckMenuItem(label="Show _Status Bar")
         self.statusbar_checkbox_menu_item.set_use_underline(True)
@@ -144,7 +149,42 @@ class EmojamWindow(Gtk.Window):
         key, mod = Gtk.accelerator_parse("<Control>s")
         self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
         #self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, Gdk.keyval_from_name("h"), Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
-        menu.append(Gtk.SeparatorMenuItem())
+        # make menu for changing picker font size
+        picker_font_size_menu_item = Gtk.MenuItem(label="Size")
+        picker_font_size_menu_item.show()
+        picker_font_size_menu = Gtk.Menu()
+        picker_font_size_menu.show()
+        picker_font_size_menu_item.set_submenu(picker_font_size_menu)
+        small_menu_item = Gtk.MenuItem(label="Small")
+        small_menu_item.connect("activate", self.change_picker_size, 100)
+        small_menu_item.show()
+        medium_menu_item = Gtk.MenuItem(label="Medium")
+        medium_menu_item.connect("activate", self.change_picker_size, 200)
+        medium_menu_item.show()
+        large_menu_item = Gtk.MenuItem(label="Large (Default)")
+        large_menu_item.connect("activate", self.change_picker_size, 275)
+        large_menu_item.show()
+        huge_menu_item = Gtk.MenuItem(label="Huge")
+        huge_menu_item.connect("activate", self.change_picker_size, 400)
+        huge_menu_item.show()
+        extra_huge_menu_item = Gtk.MenuItem(label="Extra Huge")
+        extra_huge_menu_item.connect("activate", self.change_picker_size, 600)
+        extra_huge_menu_item.show()
+        extra_extra_huge_menu_item = Gtk.MenuItem(label="Extra Extra Huge")
+        extra_extra_huge_menu_item.connect("activate", self.change_picker_size, 1000)
+        extra_extra_huge_menu_item.show()
+
+        picker_font_size_menu.append(small_menu_item)
+        picker_font_size_menu.append(medium_menu_item)
+        picker_font_size_menu.append(large_menu_item)
+        picker_font_size_menu.append(huge_menu_item)
+        picker_font_size_menu.append(extra_huge_menu_item)
+        picker_font_size_menu.append(extra_extra_huge_menu_item)
+        menu.append(picker_font_size_menu_item)
+
+        menu_separator = Gtk.SeparatorMenuItem()
+        menu_separator.show()
+        menu.append(menu_separator)
         # make exit menu item
         exit_menu_item = Gtk.MenuItem(label="E_xit")
         exit_menu_item.set_use_underline(True)
@@ -185,6 +225,7 @@ class EmojamWindow(Gtk.Window):
     def init_config(self):
         self.config = emojam_config.EmojamConfig()
         self.config.load_config()
+        self.update_picker_font_size(self.config.picker_font_size)
 
     def init_emojis(self):
         self.emo = emojam_emojis.Emojis("emojis.csv")
@@ -483,7 +524,6 @@ class EmojamWindow(Gtk.Window):
         TARGET_TEXT_ENTRY = 0
         if info == TARGET_TEXT_ENTRY:
             text = self.emo.emoji_from_name(widget.get_name())
-            print(text)
             data.set_text(text, -1)
 
     def gtk_theme_changed(self, settings, gparam):
@@ -494,40 +534,41 @@ class EmojamWindow(Gtk.Window):
         # Get "selected" color from theme, to use as our highlight color
         tv = Gtk.TextView()  # dumb smart way to get theme's selected background color
         selected_bg_color = tv.get_style_context().lookup_color('theme_selected_bg_color')
-        selected_bg_color.color.alpha = 0.7
+        #selected_bg_color.color.alpha = 0.7
         s_hilight_color = selected_bg_color.color.to_string()
-        selected_bg_color.color.alpha = 0.4
+        selected_bg_color.color.alpha = 0.5
         s_hilight_color_fainter = selected_bg_color.color.to_string()
         # static css - should probably put this in a file...
-        css = '                                    \
-            .emoji-button {                               \
-                font-family: Noto Color Emoji;     \
-                font-size: 275%;                   \
-            }                                      \
-            .group-button {                        \
-                font-family: Noto Color Emoji;     \
-                font-size: 90%;                   \
-            }                                      \
-            '
+        css = """
+                                    
+            .emoji-button {                               
+                font-family: Noto Color Emoji;     
+                font-size: 275%;                   
+            }                                      
+            .group-button {                        
+                font-family: Noto Color Emoji;     
+                font-size: 90%;                   
+            }                                      
+            """
         # dynamically generated to match theme highlight color
-        css += "                    \
-            .highlighted {                    \
-                border-radius: 10px;            \
-                background-color: %s;          \
-                text-shadow: 1px 1px 3px black;       \
-            }                                      \
-            .selected-group {                       \
-                border-radius: 5px;         \
-                background-color: %s;          \
-                text-shadow: 1px 1px 2px black;       \
-            }                                       \
-            .hovered-group {                       \
-                border-radius: 5px;         \
-                background-color: %s;          \
-                text-shadow: 1px 1px 2px black;       \
-            }                                       \
-                                                   \
-            " % (s_hilight_color, s_hilight_color, s_hilight_color_fainter)
+        css += """                    
+            .highlighted {                    
+                border-radius: 10px;            
+                background-color: %s;          
+                text-shadow: 1px 1px 3px black;       
+            }                                      
+            .selected-group {                       
+                border-radius: 5px;         
+                background-color: %s;          
+                text-shadow: 1px 1px 2px black;       
+            }                                       
+            .hovered-group {                       
+                border-radius: 5px;         
+                background-color: %s;          
+                text-shadow: 1px 1px 2px black;       
+            }                                       
+                                                   
+            """ % (s_hilight_color, s_hilight_color, s_hilight_color_fainter)
 
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(css.encode())
@@ -535,6 +576,26 @@ class EmojamWindow(Gtk.Window):
         screen = Gdk.Screen.get_default()
         context.add_provider_for_screen(screen, css_provider,
                                     Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    def change_picker_size(self, widget, new_size): # from the menu item
+        self.update_picker_font_size(new_size)
+        self.config.save()
+
+    def update_picker_font_size(self, new_size):
+        css = """
+            .emoji-button {                               
+                font-family: Noto Color Emoji;     
+                font-size: %i%%;                   
+            }                                      
+            """ % (new_size)
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(css.encode())
+        context = Gtk.StyleContext()
+        screen = Gdk.Screen.get_default()
+        context.add_provider_for_screen(screen, css_provider,
+                                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.config.set_picket_font_size(new_size)
+        
 
     def clicked_group_button(self, widget, event):
         s_group: str = widget.get_name()
