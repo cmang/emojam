@@ -21,7 +21,10 @@ class EmojamConfig:
         self.recently_used_emojis = []
         self.recently_used_max_count = 100
         self.picker_font_size = 275
+        self.picker_max_size = 5000
+        self.picker_min_size = 30
         self.show_statusbar = False
+        self.show_zoomer = False
         self.config = configparser.ConfigParser()
 
     def add_favorite(self, s_emoji_name: str):
@@ -45,11 +48,23 @@ class EmojamConfig:
     def disable_statusbar(self):
         self.show_statusbar = False
 
+    def enable_zoomer(self):
+        self.show_zoomer = True
+
+    def disable_zoomer(self):
+        self.show_zoomer = False
+
+    def zoomer_is_enabled(self):
+        return self.show_zoomer
+
     def statusbar_is_enabled(self):
         return self.show_statusbar
 
-    def set_picket_font_size(self, new_size):
+    def set_picker_font_size(self, new_size):
         self.picker_font_size = new_size
+
+    def get_picker_font_size(self):
+        return self.picker_font_size
 
     def is_in_recent_emojis(self, s_emoji_name: str):
         """ Returns True if emoji is in the recent list """
@@ -73,20 +88,27 @@ class EmojamConfig:
             self.recently_used_emojis = s_recently_used_serialized.split(',')
             if 'picker_font_size' in self.config['Emojam']:
                 self.picker_font_size = int(self.config['Emojam']['picker_font_size'])
-            if self.config['Emojam']['show_statusbar'] == 'True':
-                self.show_statusbar = True
-            else:
-                self.show_statusbar = False
+            if 'show_statusbar' in self.config['Emojam']:
+                if self.config['Emojam']['show_statusbar'] == 'True':
+                    self.show_statusbar = True
+                else:
+                    self.show_statusbar = False
+            if 'show_zoomer' in self.config['Emojam']:
+                if self.config['Emojam']['show_zoomer'] == 'True':
+                    self.show_zoomer = True
+                else:
+                    self.show_zoomer = False
 
     def save(self):
         self.config['Emojam'] = {}
         s_favorites_serialized = ','.join(self.favorites)
         self.config['Emojam']['favorites'] = s_favorites_serialized
-        self.config['Emojam']['recently_used_max'] = str(self.recently_used_max_count)
+        #self.config['Emojam']['recently_used_max'] = str(self.recently_used_max_count)
         self.config['Emojam']['picker_font_size'] = str(self.picker_font_size)
         s_recently_used_serialized = ','.join(self.recently_used_emojis)
         self.config['Emojam']['recently_used'] = s_recently_used_serialized
         self.config['Emojam']['show_statusbar'] = str(self.show_statusbar)
+        self.config['Emojam']['show_zoomer'] = str(self.show_zoomer)
         with open(self.s_config_file_name, 'w') as config_file_handle:
             self.config.write(config_file_handle)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Emojam - An Emoji keyboard for X-Windows (Linux/X11)
+# Emojam - An Emoji keyboard for Linux (Gtk/X11)
 # (c) 2022 Sam Foster
 
 # Requires GTK for Python 3
@@ -19,11 +19,12 @@ import emojam_emojis, emojam_config
 class EmojamWindow(Gtk.Window):
     def __init__(self):
         # set up window
-        super().__init__(title="Emojam")    # new Gtk.Window
+        super().__init__(title="Emojam")
         self.set_border_width(10)
         self.set_default_size(740, 400)
         self.set_can_focus(False)
         self.status_bar = None
+        self.zoom_control_box = None
         self.group_buttons_dict = {}
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.clipboard_primary = Gtk.Clipboard.get(Gdk.SELECTION_PRIMARY)
@@ -43,6 +44,7 @@ class EmojamWindow(Gtk.Window):
         self.show_all()
         self.set_active_group("All")
         self.refresh_statusbar()    # in case the config file overrides the default
+        self.refresh_zoomer()    # in case the config file overrides the default
         #self.toggled_statusbar(self.statusbar_checkbox_menu_item)
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.gtk_theme_changed)
 
@@ -54,9 +56,13 @@ class EmojamWindow(Gtk.Window):
         hamburger_menu = self.make_hamburger_menu()
         # make box for search_box and hamburger menu
         search_line_box = Gtk.HBox(spacing=10)
+        # make a zoom control
+        zoom_control_box = self.make_zoom_control_box()
+        self.zoom_control_box = zoom_control_box 
         # pack em in proper order
         search_line_box.pack_start(hamburger_menu, expand=False, fill=True, padding=0)
         search_line_box.pack_start(search_box, expand=True, fill=True, padding=0)
+        search_line_box.pack_start(zoom_control_box, expand=False, fill=True, padding=0)
         # add search box to the top of the VBox
         box_layout.pack_start(search_line_box, expand=False, fill=True, padding=0)
         # make output line
@@ -143,44 +149,22 @@ class EmojamWindow(Gtk.Window):
         self.statusbar_checkbox_menu_item.connect_object('toggled', self.toggled_statusbar, \
              self.statusbar_checkbox_menu_item)
         self.statusbar_checkbox_menu_item.show()    
-        #self.statusbar_checkbox_menu_item = statusbar_checkbox_menu_item
         menu.append(self.statusbar_checkbox_menu_item)
         # give it a keyboard shortcut
         key, mod = Gtk.accelerator_parse("<Control>s")
         self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        # make zoom checkbox toggle menu item
+        self.zoom_checkbox_menu_item = Gtk.CheckMenuItem(label="Show _Zoom Controls")
+        self.zoom_checkbox_menu_item.set_use_underline(True)
+        self.zoom_checkbox_menu_item.connect_object('toggled', self.toggled_zoom_controls, \
+             self.zoom_checkbox_menu_item)
+        self.zoom_checkbox_menu_item.show()    
+        menu.append(self.zoom_checkbox_menu_item)
+        # give it a keyboard shortcut
+        key, mod = Gtk.accelerator_parse("<Control>z")
+        self.zoom_checkbox_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        #self.statusbar_checkbox_menu_item = statusbar_checkbox_menu_item
         #self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, Gdk.keyval_from_name("h"), Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
-        # make menu for changing picker font size
-        picker_font_size_menu_item = Gtk.MenuItem(label="Size")
-        picker_font_size_menu_item.show()
-        picker_font_size_menu = Gtk.Menu()
-        picker_font_size_menu.show()
-        picker_font_size_menu_item.set_submenu(picker_font_size_menu)
-        small_menu_item = Gtk.MenuItem(label="Small")
-        small_menu_item.connect("activate", self.change_picker_size, 100)
-        small_menu_item.show()
-        medium_menu_item = Gtk.MenuItem(label="Medium")
-        medium_menu_item.connect("activate", self.change_picker_size, 200)
-        medium_menu_item.show()
-        large_menu_item = Gtk.MenuItem(label="Large (Default)")
-        large_menu_item.connect("activate", self.change_picker_size, 275)
-        large_menu_item.show()
-        huge_menu_item = Gtk.MenuItem(label="Huge")
-        huge_menu_item.connect("activate", self.change_picker_size, 400)
-        huge_menu_item.show()
-        extra_huge_menu_item = Gtk.MenuItem(label="Extra Huge")
-        extra_huge_menu_item.connect("activate", self.change_picker_size, 600)
-        extra_huge_menu_item.show()
-        extra_extra_huge_menu_item = Gtk.MenuItem(label="Extra Extra Huge")
-        extra_extra_huge_menu_item.connect("activate", self.change_picker_size, 1000)
-        extra_extra_huge_menu_item.show()
-
-        picker_font_size_menu.append(small_menu_item)
-        picker_font_size_menu.append(medium_menu_item)
-        picker_font_size_menu.append(large_menu_item)
-        picker_font_size_menu.append(huge_menu_item)
-        picker_font_size_menu.append(extra_huge_menu_item)
-        picker_font_size_menu.append(extra_extra_huge_menu_item)
-        menu.append(picker_font_size_menu_item)
 
         menu_separator = Gtk.SeparatorMenuItem()
         menu_separator.show()
@@ -200,6 +184,10 @@ class EmojamWindow(Gtk.Window):
             self.statusbar_checkbox_menu_item.set_active(True)
         else:
             self.statusbar_checkbox_menu_item.set_active(False)
+        if self.config.zoomer_is_enabled():
+            self.zoom_checkbox_menu_item.set_active(True)
+        else:
+            self.zoom_checkbox_menu_item.set_active(False)
         # add to menu button
         menu_button.set_popup(menu)
         return menu_button
@@ -216,11 +204,31 @@ class EmojamWindow(Gtk.Window):
             self.refresh_statusbar()
         self.config.save()
 
+    def toggled_zoom_controls(self, checkbox_menu_item):
+        is_checked = checkbox_menu_item.get_active()
+        #if self.current_menu_button:    # tricky
+        #emoji_name = self.current_menu_button.get_name()
+        if is_checked:
+            if self.zoom_control_box:
+                self.zoom_control_box.show()
+            self.config.enable_zoomer()
+        else:   
+            if self.zoom_control_box:
+                self.zoom_control_box.hide()
+            self.config.disable_zoomer()
+        self.config.save()
+
     def refresh_statusbar(self):
         if self.config.statusbar_is_enabled():
             self.status_bar.show()
         else:
             self.status_bar.hide()
+
+    def refresh_zoomer(self):
+        if self.config.zoomer_is_enabled():
+            self.zoom_control_box.show()
+        else:
+            self.zoom_control_box.hide()
 
     def init_config(self):
         self.config = emojam_config.EmojamConfig()
@@ -286,7 +294,7 @@ class EmojamWindow(Gtk.Window):
         if self.s_active_group == "Favorites":
             self.flowbox.set_filter_func(self.flowbox_group_filter, self.s_active_group)
 
-    def make_group_button(self, s_button_name):
+    def make_group_button(self, s_button_name: str):
         s_button_label = self.emo.emoji_from_group(s_button_name)
         button_label = Gtk.Label(label=f" {s_button_label} ")
         #button = Gtk.Button(label=s_button_label)
@@ -298,22 +306,113 @@ class EmojamWindow(Gtk.Window):
         # add it to .group-button CSS class
         button_style_context = button.get_style_context()
         button_style_context.add_class("group-button")
-        button.connect_object("event", self.group_button_mouse_event, button) # right click and hover
+        button.connect_object("event", self.button_mouse_event, button) # right click and hover
         self.group_buttons_dict.update({s_button_name: button}) # map name to widget
         return button
 
-    def enter_hover_over_group_button(self, button):
-        s_group_name = button.get_name()
+    def make_zoom_control_box(self):
+        # make buttons, connect them
+        zoom_out_event_box = Gtk.EventBox()
+        label = Gtk.Label(label='—')    # em dash
+        #label = Gtk.Label(label='-')
+        #frame = Gtk.AspectFrame(label = "—", xalign = 0.5, yalign = 0.5, ratio = 5.0, obey_child = False)
+        #frame = Gtk.AspectFrame(label = "—", ratio = 1.0, obey_child = False)
+        box = Gtk.Box()
+        box.pack_start(label, expand=False, fill=True, padding=5)
+        #box.pack_start(frame, expand=False, fill=True, padding=5)
+        #zoom_out_event_box.add(label)
+        zoom_out_event_box.add(box)
+        #zoom_out_icon = Gtk.Image.new_from_icon_name("zoom-out", Gtk.IconSize.LARGE_TOOLBAR)
+        #zoom_out_icon.show()
+        #zoom_out_event_box.add(zoom_out_icon)
+        zoom_out_event_box.set_name('-')
+        zoom_out_event_box.connect_object("button_press_event", self.zoom_button_clicked, zoom_out_event_box)
+        zoom_out_event_box.connect_object("event", self.button_mouse_event, zoom_out_event_box) # right click and hover
+        zoom_out_event_box.show()
+        zoom_in_event_box = Gtk.EventBox()
+        #label = Gtk.Label(label='+')
+        #zoom_in_event_box.add(label)
+        label = Gtk.Label(label='+') 
+        box = Gtk.Box()
+        #frame = Gtk.AspectFrame(label = "+", xalign = 0.5, yalign = 0.5, ratio = 1.0, obey_child = False)
+        box.pack_start(label, expand=False, fill=True, padding=5)
+        #box.pack_start(frame, expand=False, fill=True, padding=5)
+        #zoom_out_event_box.add(label)
+        zoom_in_event_box.add(box)
+        #zoom_in_icon = Gtk.Image.new_from_icon_name("zoom-in", Gtk.IconSize.LARGE_TOOLBAR)
+        #zoom_in_icon.show()
+        #zoom_in_event_box.add(zoom_in_icon)
+        zoom_in_event_box.set_name('+')
+        zoom_in_event_box.connect_object("button_press_event", self.zoom_button_clicked, zoom_in_event_box)
+        zoom_in_event_box.connect_object("event", self.button_mouse_event, zoom_in_event_box) # right click and hover
+        zoom_in_event_box.show()
+        size = self.config.get_picker_font_size()
+        zoom_size_event_box = Gtk.EventBox()
+        label = Gtk.Label(label=f" {size}% ")
+        self.zoom_size_label = label
+        zoom_size_event_box.add(label)
+        zoom_size_event_box.set_name('size')
+        zoom_size_event_box.connect_object("button_press_event", self.zoom_button_clicked, zoom_size_event_box)
+        zoom_size_event_box.connect_object("event", self.button_mouse_event, zoom_size_event_box) # right click and hover
+        zoom_size_event_box.show()
+        # put them in a box, with separators
+        zoom_controls_box = Gtk.HBox()       
+        zoom_controls_box.pack_start(zoom_out_event_box, expand=False, fill=True, padding=0)
+        separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        separator.show()
+        zoom_controls_box.pack_start(separator, expand=False, fill=True, padding=0)
+        zoom_controls_box.pack_start(zoom_size_event_box, expand=False, fill=True, padding=0)
+        separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        separator.show()
+        zoom_controls_box.pack_start(separator, expand=False, fill=True, padding=0)
+        zoom_controls_box.pack_start(zoom_in_event_box, expand=False, fill=True, padding=0)
+        zoom_controls_box.show()
+        return zoom_controls_box
+
+    def zoom_button_clicked(self, event_box, event_button):
+        #print(event_box.get_name())        
+        s_button = event_box.get_name()
+        old_size = self.config.get_picker_font_size()
+        new_size = old_size
+        if s_button == '-':
+            if old_size >= self.config.picker_min_size:
+                if old_size > 1000:
+                    new_size = old_size - 50
+                else:
+                    new_size = old_size - 20
+                self.update_picker_font_size(new_size)
+        elif s_button == '+':
+            if old_size <= self.config.picker_max_size:
+                if old_size > 1000:
+                    new_size = old_size + 50
+                else:
+                    new_size = old_size + 20
+                self.update_picker_font_size(new_size)
+        elif s_button == 'size':
+                new_size = 270
+                self.update_picker_font_size(new_size)
+        self.zoom_size_label.set_label(f" {new_size}% ")
+        self.config.save()
+
+    def enter_hover_over_button(self, button):
+        s_button_name = button.get_name()
         #print(f"Entering hover over {s_emoji_name}")
-        if self.s_active_group != s_group_name:
+        if self.s_active_group != s_button_name:
             button_style_context = button.get_style_context()
             button_style_context.add_class('hovered-group')
         # update status bar
-        s_status_bar_text = f"Category: {s_group_name}"
+        if s_button_name == "-":
+            s_status_bar_text = "- Zoom Out"
+        elif s_button_name == "+":
+            s_status_bar_text = "+ Zoom In"
+        elif s_button_name == "size": 
+            s_status_bar_text = "Defaul Size"
+        else:   # it's a group button
+            s_status_bar_text = f"Category: {s_button_name}"
         context_id = self.status_bar.get_context_id("hovered-group-name")
         self.status_bar.push(context_id, s_status_bar_text)
 
-    def leave_hover_over_group_button(self, button):
+    def leave_hover_over_button(self, button):
         #s_emoji_name = button.get_name()
         #print(f"Leaving hover over {s_emoji_name}")
         button_style_context = button.get_style_context()
@@ -349,13 +448,14 @@ class EmojamWindow(Gtk.Window):
         button_style_context = button.get_style_context()
         button_style_context.remove_class('highlighted')
 
-    def group_button_mouse_event(self, button, event):
+    def button_mouse_event(self, button, event):
+        """ Generic handler for our eventbox buttons - adds hover events for highlighting """
         #print(f"Debug: emoji_button_mouse_event, button: %i" % (event.button.button))
         #print(f"Debug: emoji_button_mouse_event, button: {event}")
         if event.type == Gdk.EventType.ENTER_NOTIFY:
-            self.enter_hover_over_group_button(button)
+            self.enter_hover_over_button(button)
         elif event.type == Gdk.EventType.LEAVE_NOTIFY:
-            self.leave_hover_over_group_button(button)
+            self.leave_hover_over_button(button)
 
     # Mouse event handlers - hovers, clicks, scrolls, etc
     def emoji_button_mouse_event(self, widget, event, button):  # widget is the menu widget
@@ -594,7 +694,7 @@ class EmojamWindow(Gtk.Window):
         screen = Gdk.Screen.get_default()
         context.add_provider_for_screen(screen, css_provider,
                                     Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-        self.config.set_picket_font_size(new_size)
+        self.config.set_picker_font_size(new_size)
         
 
     def clicked_group_button(self, widget, event):
