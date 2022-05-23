@@ -14,7 +14,6 @@ Most modern Linux systems with X-Windows will probably have these pre-installed:
 In Debian you should be able to handle these with:
 
 `
-    sudo apt update
     sudo apt install python3-gi python3-gi-cairo fonts-noto-color-emoji 
 `
 
