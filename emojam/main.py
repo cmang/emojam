@@ -14,7 +14,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
 
-import emojam_emojis, emojam_config
+import emojam.emojam_emojis as emojam_emojis
+import emojam.emojam_config as emojam_config
 
 class EmojamWindow(Gtk.Window):
     def __init__(self):
