@@ -4,7 +4,6 @@ Emojam is a lightweight Emoji picker/keyboard for X-Windows on Unix-like systems
 ![emojam-0 8-screenshot](https://user-images.githubusercontent.com/261501/169489836-4c3e255a-2ded-41a8-9109-c693179e4246.png)
 
 # Requirements
-Most modern Linux systems with X-Windows will probably have these pre-installed:
 
 * Python 3
 * PyGObject (GTK 3 for Python)
@@ -13,30 +12,30 @@ Most modern Linux systems with X-Windows will probably have these pre-installed:
 
 In Debian you should be able to handle these with:
 
-`
+```
     sudo apt install python3-gi python3-gi-cairo fonts-noto-color-emoji 
-`
+```
 
 # Installation
 
 1: Download emojam:
 
-`
+```
     git clone https://github.com/cmang/emojam.git  
     cd emojam  
-`
+```
 
 2: You can run it without installing it:
 
-`
-    python3 emojam.py
-`
+```
+    ./emojam.py
+```
 
 Or install it and run it:
 
 ```
-pip3 install .  
-emojam  
+    pip3 install .  
+    emojam  
 ```
 
 # Usage

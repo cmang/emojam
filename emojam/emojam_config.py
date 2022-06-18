@@ -10,8 +10,8 @@
 
 
 import configparser
-import os.path
-from os import path
+import os
+import shutil
 
 class EmojamConfig:
 
@@ -80,8 +80,20 @@ class EmojamConfig:
             return False
 
     def load_config(self):
-        if path.exists(self.s_config_file_name):
-            self.config.read(self.s_config_file_name)
+        # make local config path, if it doesn't exist
+        home_path = os.path.expanduser('~')
+        config_dir = f'{home_path}/.local/share/emojam'
+        full_config_path = f'{config_dir}/{self.s_config_file_name}'
+        self.full_config_path = full_config_path
+        print(f'DEBUG: {full_config_path}');
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+        # If there is no file in .local/share, see if there's one here. If so, copy it to .local
+        if not os.path.exists(full_config_path):
+            if os.path.exists(self.s_config_file_name):
+                shutil.copyfile(self.s_config_file_name, full_config_path, follow_symlinks=True)
+        if os.path.exists(full_config_path):
+            self.config.read(full_config_path)
             s_favorites_serialized = self.config['Emojam']['favorites']
             self.favorites = s_favorites_serialized.split(',')
             s_recently_used_serialized = self.config['Emojam']['recently_used']
@@ -109,7 +121,7 @@ class EmojamConfig:
         self.config['Emojam']['recently_used'] = s_recently_used_serialized
         self.config['Emojam']['show_statusbar'] = str(self.show_statusbar)
         self.config['Emojam']['show_zoomer'] = str(self.show_zoomer)
-        with open(self.s_config_file_name, 'w') as config_file_handle:
+        with open(self.full_config_path, 'w') as config_file_handle:
             self.config.write(config_file_handle)
 
 
