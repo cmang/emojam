@@ -13,7 +13,7 @@ Emojam is a lightweight Emoji picker/keyboard for X-Windows on Unix-like systems
 In Debian you should be able to handle these with:
 
 ```
-    sudo apt install python3-gi python3-gi-cairo fonts-noto-color-emoji 
+sudo apt install python3-gi python3-gi-cairo fonts-noto-color-emoji 
 ```
 
 # Installation
@@ -21,21 +21,21 @@ In Debian you should be able to handle these with:
 1: Download emojam:
 
 ```
-    git clone https://github.com/cmang/emojam.git  
-    cd emojam  
+git clone https://github.com/cmang/emojam.git  
+cd emojam  
 ```
 
 2: You can run it without installing it:
 
 ```
-    ./emojam.py
+./emojam.py
 ```
 
 Or install it and run it:
 
 ```
-    pip3 install .  
-    emojam  
+pip3 install .  
+emojam  
 ```
 
 # Usage
