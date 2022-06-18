@@ -6,7 +6,7 @@ with open("README.md") as f_readme:
 
 setup(
     name='emojam',
-    version='0.1.9',
+    version='0.1.10',
     author='Sam Foster',
     author_email='samfoster@gmail.com',
     description='A lighweight emoji picker for X-Windows',
@@ -19,6 +19,10 @@ setup(
     install_requires=["PyGObject"],
     include_package_data = True, 
     # package_data = ["emojis.csv"], # emoji_sets/emojis.csv
+    data_files = [
+        ('share/icons', ['data/emojam.png']),
+        ('share/applications', ['data/emojam.desktop']),
+    ],
     classifiers=[
         'Environment :: X11 Applications :: GTK',
         'Intended Audience :: End Users/Desktop',

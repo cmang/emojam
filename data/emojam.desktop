@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Emojam
+Comment=Lightewight Emoji Picker
+GenericName=EmojiPicker
+Icon=emojam
+Exec=emojam
+Terminal=false
+Type=Application
+StartupNotify=true
+
