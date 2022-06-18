@@ -22,8 +22,8 @@ In Debian you should be able to handle these with:
 1: Download emojam:
 
 `
-    git clone https://github.com/cmang/emojam.git
-    cd emojam
+    git clone https://github.com/cmang/emojam.git  
+    cd emojam  
 `
 
 2: You can run it without installing it:
@@ -34,10 +34,10 @@ In Debian you should be able to handle these with:
 
 Or install it and run it:
 
-`
-    pip3 install .
-    emojam
-`
+```
+pip3 install .  
+emojam  
+```
 
 # Usage
 The easiest way to get an emoji from Emojam into another window is to drag and drop it. You can also right-click the emoji and click "Copy" to copy it to the clipboard. You can also click on it to have it print to standard output, or to add to the "Output:" field, where it can be copied to the clipboard or strung together with other emojis and characters.
