@@ -85,7 +85,6 @@ class EmojamConfig:
         config_dir = f'{home_path}/.local/share/emojam'
         full_config_path = f'{config_dir}/{self.s_config_file_name}'
         self.full_config_path = full_config_path
-        print(f'DEBUG: {full_config_path}');
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
         # If there is no file in .local/share, see if there's one here. If so, copy it to .local
