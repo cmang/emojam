@@ -248,6 +248,8 @@ class EmojamWindow(Gtk.Window):
         label_output.show()
         box_output_line.pack_start(label_output, expand=False, fill=True, padding=0)
         self.output_text_field = Gtk.Entry()
+        output_text_field_context = self.output_text_field.get_style_context()
+        output_text_field_context.add_class("output-field")
         self.output_text_field.show()
         box_output_line.pack_start(self.output_text_field, expand=True, fill=True, padding=0)
         return box_output_line
@@ -649,7 +651,10 @@ class EmojamWindow(Gtk.Window):
             .group-button {                        
                 font-family: Noto Color Emoji;     
                 font-size: 90%;                   
-            }                                      
+            }  
+            .output-field {
+                font-family: Noto Color Emoji;     
+            }                                    
             """
         # dynamically generated to match theme highlight color
         css += """                    
