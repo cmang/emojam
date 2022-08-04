@@ -12,7 +12,8 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+gi.require_version("Notify", "0.7")
+from gi.repository import Gtk, Gdk, Notify
 
 import emojam.emojam_emojis as emojam_emojis
 import emojam.emojam_config as emojam_config
@@ -48,6 +49,7 @@ class EmojamWindow(Gtk.Window):
         self.refresh_zoomer()    # in case the config file overrides the default
         #self.toggled_statusbar(self.statusbar_checkbox_menu_item)
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.gtk_theme_changed)
+        Notify.init("Emojam")
 
     def make_larger_layout(self):
         box_layout = Gtk.VBox(spacing=10)
@@ -164,6 +166,16 @@ class EmojamWindow(Gtk.Window):
         # give it a keyboard shortcut
         key, mod = Gtk.accelerator_parse("<Control>z")
         self.zoom_checkbox_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
+        # make Auto-Copy checkbox toggle menu item
+        self.copy_checkbox_menu_item = Gtk.CheckMenuItem(label="Auto _Copy to Clipboard")
+        self.copy_checkbox_menu_item.set_use_underline(True)
+        self.copy_checkbox_menu_item.connect_object('toggled', self.toggled_auto_copy, \
+             self.copy_checkbox_menu_item)
+        self.copy_checkbox_menu_item.show()    
+        menu.append(self.copy_checkbox_menu_item)
+        # give it a keyboard shortcut
+        key, mod = Gtk.accelerator_parse("<Control>p")
+        self.copy_checkbox_menu_item.add_accelerator("activate", self.accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
         #self.statusbar_checkbox_menu_item = statusbar_checkbox_menu_item
         #self.statusbar_checkbox_menu_item.add_accelerator("activate", self.accel_group, Gdk.keyval_from_name("h"), Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
 
@@ -189,6 +201,10 @@ class EmojamWindow(Gtk.Window):
             self.zoom_checkbox_menu_item.set_active(True)
         else:
             self.zoom_checkbox_menu_item.set_active(False)
+        if self.config.auto_copy_is_enabled():
+            self.copy_checkbox_menu_item.set_active(True)
+        else:
+            self.copy_checkbox_menu_item.set_active(False)
         # add to menu button
         menu_button.set_popup(menu)
         return menu_button
@@ -218,6 +234,19 @@ class EmojamWindow(Gtk.Window):
                 self.zoom_control_box.hide()
             self.config.disable_zoomer()
         self.config.save()
+
+    def toggled_auto_copy(self, checkbox_menu_item):
+        is_checked = checkbox_menu_item.get_active()
+        #if self.current_menu_button:    # tricky
+        #emoji_name = self.current_menu_button.get_name()
+        if is_checked:
+            # send notification, "Emojam: Automatic Copy Enabled"
+            self.config.enable_auto_copy()
+        else:   
+            # send notification, "Emojam: Automatic Copy Disabled"
+            self.config.disable_auto_copy()
+        self.config.save()
+
 
     def refresh_statusbar(self):
         if self.config.statusbar_is_enabled():
@@ -746,6 +775,11 @@ class EmojamWindow(Gtk.Window):
         print(f"{s_emoji} :{s_emoji_name}: {s_emoji_group}")
         # To self.output_text_field
         self.add_to_output_line(s_emoji)
+        # copy to clipboard if auto-copy is enabled
+        if self.config.auto_copy:
+            self.clipboard.set_text(s_emoji, -1)
+            self.clipboard_primary.set_text(s_emoji, -1)
+            Notify.Notification.new(f"{s_emoji} copied to clipboard").show()
 
     def populate_flowbox_with_emojis(self, flowbox):
         # load all emojis:

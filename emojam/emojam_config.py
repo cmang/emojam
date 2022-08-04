@@ -25,6 +25,7 @@ class EmojamConfig:
         self.picker_min_size = 30
         self.show_statusbar = False
         self.show_zoomer = False
+        self.auto_copy = False
         self.config = configparser.ConfigParser()
 
     def add_favorite(self, s_emoji_name: str):
@@ -54,8 +55,17 @@ class EmojamConfig:
     def disable_zoomer(self):
         self.show_zoomer = False
 
+    def enable_auto_copy(self):
+        self.auto_copy = True
+
+    def disable_auto_copy(self):
+        self.auto_copy = False
+
     def zoomer_is_enabled(self):
         return self.show_zoomer
+
+    def auto_copy_is_enabled(self):
+        return self.auto_copy
 
     def statusbar_is_enabled(self):
         return self.show_statusbar
@@ -109,6 +119,11 @@ class EmojamConfig:
                     self.show_zoomer = True
                 else:
                     self.show_zoomer = False
+            if 'auto_copy' in self.config['Emojam']:
+                if self.config['Emojam']['auto_copy'] == 'True':
+                    self.auto_copy = True
+                else:
+                    self.auto_copy = False
 
     def save(self):
         self.config['Emojam'] = {}
@@ -120,6 +135,7 @@ class EmojamConfig:
         self.config['Emojam']['recently_used'] = s_recently_used_serialized
         self.config['Emojam']['show_statusbar'] = str(self.show_statusbar)
         self.config['Emojam']['show_zoomer'] = str(self.show_zoomer)
+        self.config['Emojam']['auto_copy'] = str(self.auto_copy)
         with open(self.full_config_path, 'w') as config_file_handle:
             self.config.write(config_file_handle)
 
