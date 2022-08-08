@@ -1,17 +1,18 @@
 #!/urs/bin/env python3
 
-# Set runtime configuration preferences for Emojam
-# Save and load config files
-# Store favorites and recent lists, so they will preserve when we restart the program
-# Some program state lives here and gets saved automatically to emojam.ini
+# Set runtime configuration preferences for Emojam, Save and load config files.
+#
+# Store favorites and recent lists, so they will preserve when we restart the
+# program. Some program state lives here and gets saved automatically to
+# emojam.ini.
 #
 # Part of Emojam, (c) 2022 Sam Foster
 # See LICENSE file for details
 
-
 import configparser
 import os
 import shutil
+
 
 class EmojamConfig:
 
@@ -38,10 +39,10 @@ class EmojamConfig:
 
     def add_recent(self, s_emoji_name: str):
         if s_emoji_name not in self.recently_used_emojis:
-            self.recently_used_emojis.insert(0,s_emoji_name)
+            self.recently_used_emojis.insert(0, s_emoji_name)
             # if this puts it over the max count setting, truncate it
             if len(self.recently_used_emojis) > self.recently_used_max_count:
-                self.recently_used_emojis.pop() # remove oldest/last item
+                self.recently_used_emojis.pop()     # remove oldest/last item
 
     def enable_statusbar(self):
         self.show_statusbar = True
@@ -97,10 +98,12 @@ class EmojamConfig:
         self.full_config_path = full_config_path
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
-        # If there is no file in .local/share, see if there's one here. If so, copy it to .local
+        # If there is no file in .local/share, see if there's one here. If so,
+        # copy it to .local
         if not os.path.exists(full_config_path):
             if os.path.exists(self.s_config_file_name):
-                shutil.copyfile(self.s_config_file_name, full_config_path, follow_symlinks=True)
+                shutil.copyfile(self.s_config_file_name, full_config_path,
+                                follow_symlinks=True)
         if os.path.exists(full_config_path):
             self.config.read(full_config_path)
             s_favorites_serialized = self.config['Emojam']['favorites']
@@ -129,7 +132,6 @@ class EmojamConfig:
         self.config['Emojam'] = {}
         s_favorites_serialized = ','.join(self.favorites)
         self.config['Emojam']['favorites'] = s_favorites_serialized
-        #self.config['Emojam']['recently_used_max'] = str(self.recently_used_max_count)
         self.config['Emojam']['picker_font_size'] = str(self.picker_font_size)
         s_recently_used_serialized = ','.join(self.recently_used_emojis)
         self.config['Emojam']['recently_used'] = s_recently_used_serialized
@@ -138,6 +140,3 @@ class EmojamConfig:
         self.config['Emojam']['auto_copy'] = str(self.auto_copy)
         with open(self.full_config_path, 'w') as config_file_handle:
             self.config.write(config_file_handle)
-
-
-

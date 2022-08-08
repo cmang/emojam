@@ -7,36 +7,41 @@
 import csv
 from importlib.resources import files
 
+
 class Emojis:
     """ Load, contain and manage an emoji database """
 
     def __init__(self, s_db_filename: str):
         self.s_db_filename = s_db_filename
         self.load_emojis_from_csv_file(s_db_filename)
- 
+
     def get_resource(self, module: str, name: str) -> str:
         """Load a textual resource file."""
-        #return files(module).joinpath(name).read_text(encoding="utf-8")
+        # return files(module).joinpath(name).read_text(encoding="utf-8")
         return files(module).joinpath(name)
 
     def load_emojis_from_csv_file(self, s_db_filename: str):
-        self.d_emojis = {} # our DB of emojis.
-        self.i_emoji_count = 0 
+        self.d_emojis = {}  # our DB of emojis.
+        self.i_emoji_count = 0
         # { group {name: represenation}}
         # Load emoji from relative resource/module path
         s_db_fullpath = self.get_resource("emojam.emoji_sets", s_db_filename)
         with open(s_db_fullpath, mode='r') as f_db_csv:
             self.csv_reader = csv.DictReader(f_db_csv)
             for row in self.csv_reader:
-                #self.d_emojis.update({row['Group'], row})
                 # Add the category if it isn't already there
                 if row['Group'] not in self.d_emojis:
                     self.d_emojis[row['Group']] = {}
                 # Make metadata dict for emoji
-                d_emoji_metadata = {"name": row['Name'], "emoji": row['Representation'], \
-                    "group": row['Group'], "sub_group": row['Subgroup'], "codepoint": row['CodePoint'], "favorite": False}
+                d_emoji_metadata = {
+                        "name": row['Name'],
+                        "emoji": row['Representation'],
+                        "group": row['Group'],
+                        "sub_group": row['Subgroup'],
+                        "codepoint": row['CodePoint'],
+                        "favorite": False
+                        }
                 # Add the emoji to its given group
-                #self.d_emojis[row['Group']].update({row['Name']: row['Representation']})
                 self.d_emojis[row['Group']].update({row['Name']: d_emoji_metadata})
                 self.i_emoji_count += 1
 
@@ -47,7 +52,6 @@ class Emojis:
         """ Takes in an emoji name, returno the emoji """
         for group in self.d_emojis:
             if s_emoji_name in self.d_emojis[group]:
-                #return(self.d_emojis[group][s_emoji_name])
                 return(self.d_emojis[group][s_emoji_name]['emoji'])
 
     def name_from_emoji(self, s_emoji: str):
@@ -86,7 +90,7 @@ class Emojis:
         elif s_emoji_name == "All":
             return self.emoji_from_name("globe with meridians")
         else:
-            # Couldn't find a nice preset icon, so just return the original name
+            # Couldn't find a nice preset icon, so return the original name
             return s_emoji_name
 
     def emoji_dict_from_name(self, s_emoji_name: str):
@@ -100,7 +104,3 @@ class Emojis:
         for group in self.d_emojis:
             if s_emoji_name in self.d_emojis[group]:
                 return(group)
-
-
-
-                
